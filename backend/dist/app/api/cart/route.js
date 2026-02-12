@@ -1,0 +1,28 @@
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/db';
+import Cart from '@/models/Cart';
+import { getUserFromRequest } from '@/lib/auth';
+export async function GET(request) {
+    try {
+        await connectDB();
+        const authUser = await getUserFromRequest(request);
+        if (!authUser) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        const cart = await Cart.findOne({ userId: authUser.userId }).populate('items.productId');
+        if (!cart) {
+            return NextResponse.json({
+                success: true,
+                data: { items: [], userId: authUser.userId },
+            });
+        }
+        return NextResponse.json({
+            success: true,
+            data: cart,
+        });
+    }
+    catch (error) {
+        console.error('Get cart error:', error);
+        return NextResponse.json({ error: 'Failed to fetch cart' }, { status: 500 });
+    }
+}
