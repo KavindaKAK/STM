@@ -1,9 +1,6 @@
-'use client';
-
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import useEmblaCarousel from 'embla-carousel-react';
-import Image from 'next/image';
 
 export function BrandScroller() {
     const { data } = useQuery({
@@ -34,12 +31,11 @@ export function BrandScroller() {
                                 key={brand._id}
                                 className="flex-[0_0_200px] flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow"
                             >
-                                <Image
+                                <img
                                     src={brand.logoUrl}
                                     alt={brand.name}
-                                    width={150}
-                                    height={50}
                                     className="object-contain"
+                                    style={{ maxWidth: '150px', maxHeight: '50px' }}
                                 />
                             </div>
                         ))}

@@ -9,8 +9,10 @@ import Brand from './models/Brand';
 import Banner from './models/Banner';
 import ShippingFee from './models/ShippingFee';
 import Review from './models/Review';
+import Cart from './models/Cart';
 import { comparePassword, generateToken, hashPassword, isValidObjectId, verifyToken } from './lib/auth';
 import { loginSchema, registerSchema } from './validators/auth';
+import { z } from 'zod';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
@@ -19,8 +21,22 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+const allowedOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+].filter((origin): origin is string => Boolean(origin));
 app.use(cors({
-    origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
 }));
 app.use(express.json());
@@ -51,6 +67,37 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
     const parsed = Number.parseInt(value || '', 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
+
+const addToCartSchema = z.object({
+    productId: z.string(),
+    qty: z.number().int().min(1),
+});
+
+const updateCartSchema = z.object({
+    productId: z.string(),
+    qty: z.number().int().min(0),
+});
+
+const updateReviewApprovalSchema = z.object({
+    isApproved: z.boolean(),
+});
+
+const createBrandSchema = z.object({
+    name: z.string().min(1, 'Brand name is required'),
+    logoUrl: z.string().min(1, 'Logo URL is required'),
+    sortOrder: z.number().int().optional(),
+    isActive: z.boolean().optional(),
+});
+
+const updateBrandSchema = z.object({
+    name: z.string().min(1, 'Brand name is required').optional(),
+    logoUrl: z.string().min(1, 'Logo URL is required').optional(),
+    sortOrder: z.number().int().optional(),
+    isActive: z.boolean().optional(),
+}).refine(
+    (data) => Object.keys(data).length > 0,
+    { message: 'At least one field is required to update brand' }
+);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {
@@ -369,6 +416,352 @@ app.delete('/api/admin/products/:id', async (req, res) => {
     }
 });
 
+// Admin - Brands
+app.get('/api/admin/brands', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const brands = await Brand.find().sort({ sortOrder: 1, name: 1 });
+        return res.json({ success: true, data: brands });
+    } catch (error) {
+        console.error('Get admin brands error:', error);
+        return res.status(500).json({ error: 'Failed to fetch brands' });
+    }
+});
+
+app.post('/api/admin/brands', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const validatedData = createBrandSchema.parse(req.body);
+        const brand = await Brand.create({
+            name: validatedData.name.trim(),
+            logoUrl: validatedData.logoUrl.trim(),
+            sortOrder: validatedData.sortOrder ?? 0,
+            isActive: validatedData.isActive ?? true,
+        });
+
+        return res.status(201).json({ success: true, data: brand });
+    } catch (error: any) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.issues });
+        }
+        if (error?.code === 11000) {
+            return res.status(400).json({ error: 'Brand with this name already exists' });
+        }
+        console.error('Create brand error:', error);
+        return res.status(500).json({ error: 'Failed to create brand' });
+    }
+});
+
+app.put('/api/admin/brands/:id', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { id } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid brand id' });
+        }
+
+        const validatedData = updateBrandSchema.parse(req.body);
+        const updateData: Record<string, any> = {};
+        if (validatedData.name !== undefined) updateData.name = validatedData.name.trim();
+        if (validatedData.logoUrl !== undefined) updateData.logoUrl = validatedData.logoUrl.trim();
+        if (validatedData.sortOrder !== undefined) updateData.sortOrder = validatedData.sortOrder;
+        if (validatedData.isActive !== undefined) updateData.isActive = validatedData.isActive;
+
+        const brand = await Brand.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!brand) {
+            return res.status(404).json({ error: 'Brand not found' });
+        }
+
+        return res.json({ success: true, data: brand });
+    } catch (error: any) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.issues });
+        }
+        if (error?.code === 11000) {
+            return res.status(400).json({ error: 'Brand with this name already exists' });
+        }
+        console.error('Update brand error:', error);
+        return res.status(500).json({ error: 'Failed to update brand' });
+    }
+});
+
+app.delete('/api/admin/brands/:id', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { id } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid brand id' });
+        }
+
+        const brand = await Brand.findByIdAndDelete(id);
+        if (!brand) {
+            return res.status(404).json({ error: 'Brand not found' });
+        }
+
+        return res.json({ success: true, message: 'Brand deleted successfully' });
+    } catch (error) {
+        console.error('Delete brand error:', error);
+        return res.status(500).json({ error: 'Failed to delete brand' });
+    }
+});
+
+// Admin - Reviews
+app.get('/api/admin/reviews', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const status = parseQueryString(req.query.status);
+        const page = parsePositiveInt(parseQueryString(req.query.page), 1);
+        const limit = parsePositiveInt(parseQueryString(req.query.limit), 20);
+        const skip = (page - 1) * limit;
+
+        const query: Record<string, any> = {};
+        if (status === 'approved') query.isApproved = true;
+        if (status === 'pending') query.isApproved = false;
+
+        const [reviews, total] = await Promise.all([
+            Review.find(query)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate('userId', 'name email')
+                .populate('productId', 'name sku'),
+            Review.countDocuments(query),
+        ]);
+
+        return res.json({
+            success: true,
+            data: reviews,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        });
+    } catch (error) {
+        console.error('Get admin reviews error:', error);
+        return res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+});
+
+app.put('/api/admin/reviews/:id', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { id } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid review id' });
+        }
+
+        const { isApproved } = updateReviewApprovalSchema.parse(req.body);
+        const review = await Review.findByIdAndUpdate(
+            id,
+            { isApproved },
+            { new: true }
+        );
+
+        if (!review) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+
+        return res.json({ success: true, data: review });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.issues });
+        }
+        console.error('Update review error:', error);
+        return res.status(500).json({ error: 'Failed to update review' });
+    }
+});
+
+app.delete('/api/admin/reviews/:id', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser || authUser.role !== 'admin') {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { id } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid review id' });
+        }
+
+        const review = await Review.findByIdAndDelete(id);
+        if (!review) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+
+        return res.json({ success: true, message: 'Review deleted successfully' });
+    } catch (error) {
+        console.error('Delete review error:', error);
+        return res.status(500).json({ error: 'Failed to delete review' });
+    }
+});
+
+// Cart
+app.get('/api/cart', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const cart = await Cart.findOne({ userId: authUser.userId }).populate('items.productId');
+        if (!cart) {
+            return res.json({
+                success: true,
+                data: { items: [], userId: authUser.userId },
+            });
+        }
+
+        return res.json({ success: true, data: cart });
+    } catch (error) {
+        console.error('Get cart error:', error);
+        return res.status(500).json({ error: 'Failed to fetch cart' });
+    }
+});
+
+app.post('/api/cart/add', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { productId, qty } = addToCartSchema.parse(req.body);
+        if (!isValidObjectId(productId)) {
+            return res.status(400).json({ error: 'Invalid product ID format' });
+        }
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        let cart = await Cart.findOne({ userId: authUser.userId });
+        if (!cart) {
+            cart = new Cart({
+                userId: authUser.userId,
+                items: [],
+            });
+        }
+
+        const existingItemIndex = cart.items.findIndex(
+            (item) => item.productId.toString() === productId
+        );
+
+        if (existingItemIndex > -1) {
+            const nextQty = cart.items[existingItemIndex].qty + qty;
+            if (product.stockQty < nextQty) {
+                return res.status(400).json({ error: 'Insufficient stock' });
+            }
+
+            cart.items[existingItemIndex].qty = nextQty;
+            cart.items[existingItemIndex].priceSnapshot = product.salePrice;
+        } else {
+            if (product.stockQty < qty) {
+                return res.status(400).json({ error: 'Insufficient stock' });
+            }
+
+            cart.items.push({
+                productId: product._id,
+                qty,
+                priceSnapshot: product.salePrice,
+                nameSnapshot: product.name,
+                imageSnapshot: product.images[0] || '',
+            });
+        }
+
+        cart.updatedAt = new Date();
+        await cart.save();
+
+        return res.json({ success: true, data: cart });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.issues });
+        }
+        console.error('Add to cart error:', error);
+        return res.status(500).json({ error: 'Failed to add to cart' });
+    }
+});
+
+app.post('/api/cart/update', async (req, res) => {
+    try {
+        const authUser = getAuthUser(req);
+        if (!authUser) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { productId, qty } = updateCartSchema.parse(req.body);
+        if (!isValidObjectId(productId)) {
+            return res.status(400).json({ error: 'Invalid product ID format' });
+        }
+
+        const cart = await Cart.findOne({ userId: authUser.userId });
+        if (!cart) {
+            return res.status(404).json({ error: 'Cart not found' });
+        }
+
+        if (qty === 0) {
+            cart.items = cart.items.filter((item) => item.productId.toString() !== productId);
+        } else {
+            const product = await Product.findById(productId);
+            if (!product) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            if (product.stockQty < qty) {
+                return res.status(400).json({ error: 'Insufficient stock' });
+            }
+
+            const itemIndex = cart.items.findIndex((item) => item.productId.toString() === productId);
+            if (itemIndex > -1) {
+                cart.items[itemIndex].qty = qty;
+                cart.items[itemIndex].priceSnapshot = product.salePrice;
+            }
+        }
+
+        cart.updatedAt = new Date();
+        await cart.save();
+
+        return res.json({ success: true, data: cart });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.issues });
+        }
+        console.error('Update cart error:', error);
+        return res.status(500).json({ error: 'Failed to update cart' });
+    }
+});
+
 // Public data
 app.get('/api/brands', async (_req, res) => {
     try {
@@ -453,7 +846,7 @@ const startServer = async () => {
 
         app.listen(PORT, () => {
             console.log(`Backend server is running on http://localhost:${PORT}`);
-            console.log(`CORS enabled for: ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`);
+            console.log(`CORS enabled for: ${allowedOrigins.join(', ')}`);
             console.log('MongoDB connected');
         });
     } catch (error) {
@@ -464,3 +857,4 @@ const startServer = async () => {
 };
 
 startServer();
+

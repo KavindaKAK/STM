@@ -7,10 +7,13 @@ import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function AdminBrandsPage() {
-    const { token } = useAuth();
+    const { user, token, isLoading: isAuthLoading } = useAuth();
     const { showToast } = useToast();
+    const router = useRouter();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -19,6 +22,12 @@ export default function AdminBrandsPage() {
         sortOrder: '',
     });
     const [editData, setEditData] = useState<any>({});
+
+    useEffect(() => {
+        if (!isAuthLoading && (!user || user.role !== 'admin')) {
+            router.push('/');
+        }
+    }, [isAuthLoading, router, user]);
 
     const { data, isLoading, refetch } = useQuery({
         queryKey: ['admin-brands'],
@@ -29,6 +38,10 @@ export default function AdminBrandsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!token) {
+            showToast('Please login as admin to manage brands', 'error');
+            return;
+        }
 
         try {
             await api.createBrand({
@@ -63,15 +76,18 @@ export default function AdminBrandsPage() {
     };
 
     const handleUpdate = async (id: string) => {
+        if (!token) {
+            showToast('Please login as admin to manage brands', 'error');
+            return;
+        }
         try {
-            await fetch(`/api/admin/brands/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(editData),
-            });
+            const payload = {
+                name: (editData.name || '').trim(),
+                logoUrl: (editData.logoUrl || '').trim(),
+                sortOrder: Number.isFinite(editData.sortOrder) ? editData.sortOrder : 0,
+                isActive: typeof editData.isActive === 'boolean' ? editData.isActive : true,
+            };
+            await api.updateBrand(id, payload, token);
 
             showToast('Brand updated successfully', 'success');
             setEditingId(null);
@@ -84,9 +100,13 @@ export default function AdminBrandsPage() {
 
     const handleDelete = async (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+        if (!token) {
+            showToast('Please login as admin to manage brands', 'error');
+            return;
+        }
 
         try {
-            await api.deleteBrand(id, token!);
+            await api.deleteBrand(id, token);
             showToast('Brand deleted successfully', 'success');
             refetch();
         } catch (error: any) {
@@ -95,19 +115,20 @@ export default function AdminBrandsPage() {
     };
 
     const toggleStatus = async (id: string, currentStatus: boolean) => {
+        if (!token) {
+            showToast('Please login as admin to manage brands', 'error');
+            return;
+        }
         try {
             const brand = brands.find((b: any) => b._id === id);
-            await fetch(`/api/admin/brands/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    ...brand,
-                    isActive: !currentStatus
-                }),
-            });
+            if (!brand) {
+                showToast('Brand not found', 'error');
+                return;
+            }
+            await api.updateBrand(id, {
+                ...brand,
+                isActive: !currentStatus,
+            }, token);
 
             showToast('Status updated successfully', 'success');
             refetch();
@@ -116,7 +137,7 @@ export default function AdminBrandsPage() {
         }
     };
 
-    if (isLoading) {
+    if (isLoading || isAuthLoading || !user || user.role !== 'admin') {
         return (
             <div className="container mx-auto px-4 py-12">
                 <div className="text-center">
@@ -231,7 +252,7 @@ export default function AdminBrandsPage() {
                                         <input
                                             type="number"
                                             value={editData.sortOrder}
-                                            onChange={(e) => setEditData({ ...editData, sortOrder: parseInt(e.target.value) })}
+                                            onChange={(e) => setEditData({ ...editData, sortOrder: Number.parseInt(e.target.value || '0', 10) })}
                                             className="w-20 px-2 py-1 border border-gray-300 rounded"
                                         />
                                     ) : (

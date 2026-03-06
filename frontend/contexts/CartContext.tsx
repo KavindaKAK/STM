@@ -23,24 +23,58 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
 
         try {
+            console.log('[CartContext] Refreshing cart with token:', token ? 'Present' : 'Missing');
             const response: any = await api.getCart(token);
             const count = response.data?.items?.reduce((sum: number, item: any) => sum + item.qty, 0) || 0;
+            console.log('[CartContext] Cart count updated to:', count);
             setCartCount(count);
         } catch (error) {
-            console.error('Failed to fetch cart:', error);
+            console.error('[CartContext] Failed to fetch cart:', error);
         }
     };
 
     const addToCart = async (productId: string, qty: number) => {
+        console.log('[CartContext] Adding to cart:', { productId, qty, hasToken: !!token });
+        
         if (!token) {
+            console.error('[CartContext] No token available');
             throw new Error('Please login to add items to cart');
         }
 
-        await api.addToCart({ productId, qty }, token);
-        await refreshCart();
+        if (!productId) {
+            console.error('[CartContext] No product ID provided');
+            throw new Error('Product ID is missing');
+        }
+
+        try {
+            console.log('[CartContext] Calling addToCart API with:', {
+                productId,
+                qty,
+                apiUrl: process.env.NEXT_PUBLIC_API_URL,
+                tokenLength: token?.length
+            });
+            
+            const response = await api.addToCart({ productId, qty }, token);
+            console.log('[CartContext] Add to cart response:', response);
+            
+            await refreshCart();
+            console.log('[CartContext] Cart refreshed successfully');
+        } catch (error: any) {
+            console.error('[CartContext] Add to cart error:', {
+                message: error.message,
+                statusCode: error.statusCode,
+                response: error.response,
+                productId,
+                qty,
+                token: token ? 'Present' : 'Missing',
+                apiUrl: process.env.NEXT_PUBLIC_API_URL
+            });
+            throw error;
+        }
     };
 
     useEffect(() => {
+        console.log('[CartContext] Token changed, refreshing cart:', { hasToken: !!token });
         refreshCart();
     }, [token]);
 

@@ -2,6 +2,8 @@ import { AppleHero } from '@/components/home/AppleHero';
 import { BrandScroller } from '@/components/home/BrandScroller';
 import { BestSellers } from '@/components/home/BestSellers';
 import { ReviewsPreview } from '@/components/home/ReviewsPreview';
+import { CarBatteryAnimation } from '@/components/home/CarBatteryAnimation';
+import { CarTyreAnimation } from '@/components/home/CarTyreAnimation';
 import Link from 'next/link';
 
 export default function Home() {
@@ -23,7 +25,7 @@ export default function Home() {
                         text: "Learn more",
                         href: "/about"
                     }}
-                    emoji="🛞"
+                    animationComponent={<CarTyreAnimation />}
                 />
 
                 {/* Light Hero - Batteries */}
@@ -40,7 +42,7 @@ export default function Home() {
                         text: "Buy",
                         href: "/batteries"
                     }}
-                    emoji="🔋"
+                    animationComponent={<CarBatteryAnimation />}
                 />
             </div>
 

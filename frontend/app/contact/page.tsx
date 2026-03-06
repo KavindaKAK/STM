@@ -119,6 +119,94 @@ export default function ContactPage() {
                         </form>
                     </div>
                 </div>
+
+                {/* User Ratings */}
+                <div className="mt-12">
+                    <h2 className="text-center text-sm font-semibold text-gray-400 mb-4">USER RATINGS</h2>
+
+                    <div className="bg-gray-900 rounded-2xl p-4">
+                        <div className="bg-gray-800 rounded-lg p-5">
+                            <div className="flex items-center mb-6">
+                                <div className="inline-flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-pink-400">❤</div>
+                                    <div className="text-sm text-gray-300 font-semibold">RATING</div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-end gap-6">
+                                {/* Love */}
+                                <div className="flex-1">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-14 h-14 rounded-full border border-gray-700 flex items-center justify-center text-2xl text-gray-300 mb-2">😍</div>
+                                        <div className="text-xs text-gray-400 mb-2">love</div>
+                                        <div className="w-full px-4">
+                                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-pink-500 rounded-full" style={{ width: '72%' }} />
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-pink-400 font-semibold mt-2">2.5k</div>
+                                    </div>
+                                </div>
+
+                                {/* Like */}
+                                <div className="flex-1">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-14 h-14 rounded-full border border-gray-700 flex items-center justify-center text-2xl text-gray-300 mb-2">😊</div>
+                                        <div className="text-xs text-gray-400 mb-2">like</div>
+                                        <div className="w-full px-4">
+                                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-pink-300 rounded-full" style={{ width: '32%' }} />
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-pink-300 font-semibold mt-2">1.1k</div>
+                                    </div>
+                                </div>
+
+                                {/* Ok */}
+                                <div className="flex-1">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-14 h-14 rounded-full border border-gray-700 flex items-center justify-center text-2xl text-gray-300 mb-2">😐</div>
+                                        <div className="text-xs text-gray-400 mb-2">ok</div>
+                                        <div className="w-full px-4">
+                                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-orange-400 rounded-full" style={{ width: '6%' }} />
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-orange-300 font-semibold mt-2">268</div>
+                                    </div>
+                                </div>
+
+                                {/* Dislike */}
+                                <div className="flex-1">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-14 h-14 rounded-full border border-gray-700 flex items-center justify-center text-2xl text-gray-300 mb-2">☹️</div>
+                                        <div className="text-xs text-gray-400 mb-2">dislike</div>
+                                        <div className="w-full px-4">
+                                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-blue-400 rounded-full" style={{ width: '12%' }} />
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-blue-300 font-semibold mt-2">103</div>
+                                    </div>
+                                </div>
+
+                                {/* Hate */}
+                                <div className="flex-1">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-14 h-14 rounded-full border border-gray-700 flex items-center justify-center text-2xl text-gray-300 mb-2">😡</div>
+                                        <div className="text-xs text-gray-400 mb-2">hate</div>
+                                        <div className="w-full px-4">
+                                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-gray-600 rounded-full" style={{ width: '8%' }} />
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-400 font-semibold mt-2">71</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

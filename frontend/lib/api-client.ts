@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+console.log('[API Client] Initialized with API_URL:', API_URL);
+
 interface RequestOptions extends RequestInit {
     token?: string;
 }
@@ -18,21 +20,32 @@ async function apiRequest<T>(
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...fetchOptions,
-        headers: {
-            ...headers,
-            ...fetchOptions.headers,
-        },
-    });
+    const fullUrl = `${API_URL}${endpoint}`;
+    console.log('[API] Making request to:', fullUrl, { hasToken: !!token });
 
-    const data = await response.json();
+    try {
+        const response = await fetch(fullUrl, {
+            ...fetchOptions,
+            headers: {
+                ...headers,
+                ...fetchOptions.headers,
+            },
+        });
 
-    if (!response.ok) {
-        throw new Error(data.error || 'Request failed');
+        const data = await response.json();
+
+        console.log('[API] Response from:', endpoint, { status: response.status, success: response.ok });
+
+        if (!response.ok) {
+            console.error('[API] Error response:', { endpoint, status: response.status, error: data.error });
+            throw new Error(data.error || `Request failed with status ${response.status}`);
+        }
+
+        return data;
+    } catch (error: any) {
+        console.error('[API] Request failed:', { endpoint, error: error.message });
+        throw error;
     }
-
-    return data;
 }
 
 export const api = {
@@ -85,8 +98,17 @@ export const api = {
     },
     updateOrderStatus: (id: string, data: any, token: string) => apiRequest(`/api/admin/orders/${id}/status`, { method: 'PUT', body: JSON.stringify(data), token }),
 
+    // Admin - Reviews
+    getAdminReviews: (token: string, params?: any) => {
+        const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
+        return apiRequest(`/api/admin/reviews${queryString}`, { token });
+    },
+    updateReviewStatus: (id: string, data: any, token: string) => apiRequest(`/api/admin/reviews/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
+    deleteReview: (id: string, token: string) => apiRequest(`/api/admin/reviews/${id}`, { method: 'DELETE', token }),
+
     // Admin - Brands
     createBrand: (data: any, token: string) => apiRequest('/api/admin/brands', { method: 'POST', body: JSON.stringify(data), token }),
+    updateBrand: (id: string, data: any, token: string) => apiRequest(`/api/admin/brands/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
     deleteBrand: (id: string, token: string) => apiRequest(`/api/admin/brands/${id}`, { method: 'DELETE', token }),
 };
 

@@ -8,7 +8,7 @@ import Notification from '@/models/Notification';
 import User from '@/models/User';
 import { getUserFromRequest } from '@/lib/auth';
 import { checkoutSchema } from '@/validators/order';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 export async function POST(request: NextRequest) {
     const session = await mongoose.startSession();
@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
         const validatedData = checkoutSchema.parse(body);
 
         // Get cart
-        const cart = await Cart.findOne({ userId: authUser.userId }).session(session);
+        const userObjectId = new Types.ObjectId(authUser.userId);
+        const cart = await Cart.findOne({ userId: userObjectId }).session(session);
 
         if (!cart || cart.items.length === 0) {
             await session.abortTransaction();
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get user data
-        const user = await User.findById(authUser.userId).session(session);
+        const user = await User.findById(userObjectId).session(session);
 
         if (!user) {
             await session.abortTransaction();
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
 
         // Create order
         const order = await Order.create([{
-            userId: authUser.userId,
+            userId: userObjectId,
             items: orderItems,
             customer: {
                 name: user.name,

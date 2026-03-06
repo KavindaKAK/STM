@@ -1,7 +1,5 @@
-'use client';
-
-import Link from 'next/link';
-import Image from 'next/image';
+import { Link } from 'react-router-dom';
+import { ReactNode } from 'react';
 
 interface AppleHeroProps {
     variant: 'dark' | 'light';
@@ -19,6 +17,7 @@ interface AppleHeroProps {
     imageSrc?: string;
     imageAlt?: string;
     emoji?: string;
+    animationComponent?: ReactNode;
 }
 
 export function AppleHero({
@@ -30,7 +29,8 @@ export function AppleHero({
     secondaryCta,
     imageSrc,
     imageAlt,
-    emoji
+    emoji,
+    animationComponent
 }: AppleHeroProps) {
     const isDark = variant === 'dark';
 
@@ -64,7 +64,7 @@ export function AppleHero({
                     {/* CTAs */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
                         <Link
-                            href={primaryCta.href}
+                            to={primaryCta.href}
                             className={`px-8 py-3 rounded-full text-base font-semibold transition-all duration-300 hover:scale-105 shadow-lg ${isDark
                                     ? 'bg-[#0071e3] text-white hover:bg-[#0077ed]'
                                     : 'bg-[#0071e3] text-white hover:bg-[#0077ed]'
@@ -75,7 +75,7 @@ export function AppleHero({
 
                         {secondaryCta && (
                             <Link
-                                href={secondaryCta.href}
+                                to={secondaryCta.href}
                                 className={`px-8 py-3 rounded-full text-base font-semibold transition-all duration-300 hover:scale-105 ${isDark
                                         ? 'text-white border-2 border-white/30 hover:border-white/60 hover:bg-white/10'
                                         : 'text-[#0071e3] border-2 border-[#0071e3] hover:bg-[#0071e3]/10'
@@ -88,12 +88,17 @@ export function AppleHero({
 
                     {/* Product Visual */}
                     <div className="relative aspect-[16/9] max-w-3xl mx-auto">
-                        {emoji && !imageSrc && (
+                        {animationComponent && (
+                            <div className="w-full h-full flex items-center justify-center">
+                                {animationComponent}
+                            </div>
+                        )}
+                        {!animationComponent && emoji && !imageSrc && (
                             <div className="text-[200px] md:text-[300px] leading-none animate-float">
                                 {emoji}
                             </div>
                         )}
-                        {imageSrc && (
+                        {!animationComponent && imageSrc && (
                             <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-500">
                                 <Image
                                     src={imageSrc}

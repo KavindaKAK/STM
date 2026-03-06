@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
 import { getUserFromRequest } from '@/lib/auth';
+import { Types } from 'mongoose';
 
 export async function GET(request: NextRequest) {
     try {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const cart = await Cart.findOne({ userId: authUser.userId }).populate('items.productId');
+        const cart = await Cart.findOne({ userId: new Types.ObjectId(authUser.userId) }).populate('items.productId');
 
         if (!cart) {
             return NextResponse.json({

@@ -1,0 +1,8 @@
+
+> stm-backend@1.0.0 start
+> node dist/server.js
+
+Database connected successfully
+Backend server is running on http://localhost:5000
+CORS enabled for: http://localhost:3000, http://localhost:3000, http://127.0.0.1:3000, http://localhost:5173, http://127.0.0.1:5173
+MongoDB connected

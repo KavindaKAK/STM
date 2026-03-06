@@ -38,12 +38,19 @@ export default function ProductDetailsPage() {
             return;
         }
 
+        if (!product?._id) {
+            showToast('Product information is missing', 'error');
+            return;
+        }
+
         setIsAdding(true);
         try {
             await addToCart(product._id, quantity);
-            showToast(`Added ${quantity} item(s) to cart!`, 'success');
+            showToast(`✓ Added ${quantity} item(s) to cart!`, 'success');
         } catch (error: any) {
-            showToast(error.message || 'Failed to add to cart', 'error');
+            console.error('Add to cart error:', error);
+            const errorMessage = error?.message || 'Failed to add to cart. Please try again.';
+            showToast(errorMessage, 'error');
         } finally {
             setIsAdding(false);
         }

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Cart from '@/models/Cart';
 import Product from '@/models/Product';
-import { getUserFromRequest } from '@/lib/auth';
+import { getUserFromRequest, isValidObjectId } from '@/lib/auth';
 import { z } from 'zod';
+import { Types } from 'mongoose';
 
 const addToCartSchema = z.object({
     productId: z.string(),
@@ -26,6 +27,14 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { productId, qty } = addToCartSchema.parse(body);
 
+        // Validate productId format
+        if (!isValidObjectId(productId)) {
+            return NextResponse.json(
+                { error: 'Invalid product ID format' },
+                { status: 400 }
+            );
+        }
+
         // Get product details
         const product = await Product.findById(productId);
 
@@ -44,11 +53,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Get or create cart
-        let cart = await Cart.findOne({ userId: authUser.userId });
+        const userObjectId = new Types.ObjectId(authUser.userId);
+        let cart = await Cart.findOne({ userId: userObjectId });
 
         if (!cart) {
             cart = new Cart({
-                userId: authUser.userId,
+                userId: userObjectId,
                 items: [],
             });
         }

@@ -1,8 +1,29 @@
-# Tyre Shop E-Commerce Platform
+# Tyre Shop E-Commerce Platform - Frontend
 
-A full-stack e-commerce platform for a tyre shop in Beruwala, Sri Lanka, built with Next.js 14, TypeScript, MongoDB, and Tailwind CSS.
+A modern React e-commerce frontend for a tyre shop in Beruwala, Sri Lanka, built with **Vite**, **React Router**, **TypeScript**, and **Tailwind CSS**.
 
-## 🚀 Features
+> **Note**: This frontend has been migrated from Next.js to Vite + React Router for better performance and simplified development. All functionality remains identical.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 16+ and npm
+
+### Installation
+```bash
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env.local
+
+# Start development server
+npm run dev
+```
+
+The frontend will be available at: **http://localhost:5173**
+
+## 📋 Features
 
 ### Customer Features
 - ✅ Browse tyres, batteries, and accessories with advanced filtering

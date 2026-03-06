@@ -1,11 +1,8 @@
-'use client';
-
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import useEmblaCarousel from 'embla-carousel-react';
 import { useCallback } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 export function HeroSlider() {
     const { data } = useQuery({
@@ -35,13 +32,11 @@ export function HeroSlider() {
                 <div className="flex">
                     {banners.map((banner: any) => (
                         <div key={banner._id} className="flex-[0_0_100%] min-w-0">
-                            <Link href={banner.linkUrl || '#'} className="block relative aspect-[21/9] md:aspect-[21/6]">
-                                <Image
+                            <Link to={banner.linkUrl || '#'} className="block relative aspect-[21/9] md:aspect-[21/6]">
+                                <img
                                     src={banner.imageUrl}
                                     alt={banner.title}
-                                    fill
-                                    className="object-cover"
-                                    priority
+                                    className="w-full h-full object-cover"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center">
                                     <div className="container mx-auto px-4">
@@ -52,7 +47,7 @@ export function HeroSlider() {
                                 </div>
                             </Link>
                         </div>
-                    ))}
+                    ))}}
                 </div>
             </div>
 

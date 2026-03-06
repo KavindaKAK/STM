@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from '@/components/providers/Providers';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { InitialSplashGate } from '@/components/layout/InitialSplashGate';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,15 +22,17 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={inter.className}>
-                <Providers>
-                    <div className="flex flex-col min-h-screen">
-                        <Header />
-                        <main className="flex-1">
-                            {children}
-                        </main>
-                        <Footer />
-                    </div>
-                </Providers>
+                <InitialSplashGate>
+                    <Providers>
+                        <div className="flex min-h-dvh flex-col">
+                            <Header />
+                            <main className="flex-1 min-h-0">
+                                {children}
+                            </main>
+                            <Footer />
+                        </div>
+                    </Providers>
+                </InitialSplashGate>
             </body>
         </html>
     );
